@@ -8,7 +8,7 @@ class LearningAgent(Agent):
     """ An agent that learns to drive in the Smartcab world.
         This is the object you will be modifying. """ 
     #def __init__(self, env, learning=False, epsilon=1.0, alpha=0.5):
-    def __init__(self, env, learning=True, epsilon=1.0, alpha=0.5):
+    def __init__(self, env, learning=True, epsilon=0.9, alpha=0.5):
         super(LearningAgent, self).__init__(env)     # Set the agent in the evironment 
         self.planner = RoutePlanner(self.env, self)  # Create a route planner
         self.valid_actions = self.env.valid_actions  # The set of valid actions
@@ -24,6 +24,9 @@ class LearningAgent(Agent):
         ###########
         # Set any additional class parameters as needed
 
+        # counts for number of trials
+        self.trial_counter = 0
+
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
             'testing' is set to True if testing trials are being used
@@ -31,14 +34,14 @@ class LearningAgent(Agent):
 
         # Select the destination as the new location to route to
         self.planner.route_to(destination)
-        
+        self.trial_counter += 1
         ########### 
         ## TO DO ##
         ###########
         # Update epsilon using a decay function of your choice
         # Update additional class parameters as needed
         # If 'testing' is True, set epsilon and alpha to 0
-        self.epsilon = self.epsilon - 0.05 
+        self.epsilon = 1/(self.trial_counter * self.trial_counter)
 
         if testing == True:
             self.epsilon = 0
@@ -121,8 +124,7 @@ class LearningAgent(Agent):
         if self.learning == False:
             action = self.valid_actions[random.randint(0,3)]
         else:
-            ######## ????????????????????????
-            if self.epsilon >= 0.5:
+            if self.epsilon > random.random():
                 action = self.valid_actions[random.randint(0,3)]
             else:
                 actionDic = self.Q["{}-{}-{}-{}-{}-{}".format(str(state[0]), str(state[1]), str(state[2]), str(state[3]), str(state[4]), str(state[5]))]
@@ -144,8 +146,7 @@ class LearningAgent(Agent):
         if self.learning:
             actionDic = self.Q["{}-{}-{}-{}-{}-{}".format(str(state[0]), str(state[1]), str(state[2]), str(state[3]), str(state[4]), str(state[5]))]
             Qvalue = actionDic[action]
-            ############# ????????????????????????????????????
-            updatedQvalue = Qvalue * (1 - self.alpha) + self.alpha * (reward + Qvalue)
+            updatedQvalue = Qvalue * (1 - self.alpha) + self.alpha * reward
             actionDic[action] = updatedQvalue
         return
 
@@ -160,7 +161,6 @@ class LearningAgent(Agent):
         action = self.choose_action(state)  # Choose an action
         reward = self.env.act(self, action) # Receive a reward
         self.learn(state, action, reward)   # Q-learn
-
         return
         
 
@@ -198,7 +198,7 @@ def run():
     #   display      - set to False to disable the GUI if PyGame is enabled
     #   log_metrics  - set to True to log trial and simulation results to /logs
     #   optimized    - set to True to change the default log file name
-    sim = Simulator(env, update_delay=0.01, display=True, log_metrics=True, optimized=False)
+    sim = Simulator(env, update_delay=0.01, display=True, log_metrics=True, optimized=True)
     #sim = Simulator(env)
     
     ##############
@@ -207,7 +207,7 @@ def run():
     #   tolerance  - epsilon tolerance before beginning testing, default is 0.05 
     #   n_test     - discrete number of testing trials to perform, default is 0
     #sim.run()
-    sim.run(n_test=10)
+    sim.run(n_test=10, tolerance = 0.0025)
 
 
 if __name__ == '__main__':
